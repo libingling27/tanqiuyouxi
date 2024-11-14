@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Canvas Workshop - lesson 10: finishing up</title>
+    <style>
+        * { padding: 0; margin: 0; }
+        canvas { background: #eee; display: block; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 20px; }
+    </style>//
+</head>
+<body>
+    <h1>李冰凌打砖块游戏</h1>
+    <canvas id="myCanvas" width="480" height="320"></canvas>
+    <script>
+        // 获取 canvas 元素并获取 2d 绘图上下文
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+
+        // 定义球的半径
+        var ballRadius = 10;
+
+         // 定义球的初始位置
+        var x = canvas.width/2;
+        var y = canvas.height-30;
+
+        // 定义球的初始速度
+        var dx = 2;
+        var dy = -2;
+
+        // 定义挡板的高度和宽度
+        var paddleHeight = 10;
+        var paddleWidth = 75;
+
+        // 定义挡板的初始位置
+        var paddleX = (canvas.width-paddleWidth)/2;
+
+        // 定义按键状态 
+        var rightPressed = false;
+        var leftPressed = false;
+
+         // 定义砖块的行数和列数
+        var brickRowCount = 5;
+        var brickColumnCount = 3;
+
+        // 定义砖块的宽度和高度
+        var brickWidth = 75;
+        var brickHeight = 20;
+
+        // 定义砖块之间的间距
+        var brickPadding = 10;
+
+        // 定义砖块离画布顶部和左侧的偏移量
+        var brickOffsetTop = 30;
+        var brickOffsetLeft = 30;
+
+         // 定义得分和生命
+        var score = 0;
+        var lives = 3;
+
+        // 初始化砖块状态
+        var bricks = [];
+        for(var c=0; c<brickColumnCount; c++) {
+            bricks[c] = [];
+            for(var r=0; r<brickRowCount; r++) {
+                bricks[c][r] = { x: 0, y: 0, status: 1 };
+            }
+        }
+        // 添加键盘按下事件监听
+        document.addEventListener("keydown", keyDownHandler, false);
+        // 添加键盘抬起事件监听
+        document.addEventListener("keyup", keyUpHandler, false);
+        // 添加鼠标移动事件监听
+        document.addEventListener("mousemove", mouseMoveHandler, false);
+         
+        // 键盘按下事件处理函数
+        function keyDownHandler(e) {
+            if(e.code  == "ArrowRight") {
+                // 按下右键，设置 rightPressed 为 true
+                rightPressed = true;
+            }
+            else if(e.code == 'ArrowLeft') {
+                // 按下左键，设置 leftPressed 为 true
+                leftPressed = true;
+            }
+        }
+        // 键盘抬起事件处理函数
+        function keyUpHandler(e) {
+            if(e.code == 'ArrowRight') {
+                 // 抬起右键，设置 rightPressed 为 false
+                rightPressed = false;
+            }
+            else if(e.code == 'ArrowLeft') {
+                 // 抬起左键，设置 rightPressed 为 true
+                leftPressed = false;
+            }
+        }
+        
+        function mouseMoveHandler(e) {
+             // 获取鼠标在画布上的水平位置
+            var relativeX = e.clientX - canvas.offsetLeft;
+             // 如果鼠标位置在画布内
+            if(relativeX > 0 && relativeX < canvas.width) {
+                 // 更新挡板的水平位置，使其跟随鼠标移动
+                paddleX = relativeX - paddleWidth/2;
+            }
+        }
+
+        function collisionDetection() {
+             // 遍历所有砖块
+            for(var c=0; c<brickColumnCount; c++) {
+                for(var r=0; r<brickRowCount; r++) {
+                    var b = bricks[c][r];
+                    // 如果砖块状态为 1（未被打破）
+                    if(b.status == 1) {
+                         // 检测球是否与砖块发生碰撞
+                        if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+                             // 改变球的运动方向
+                            dy = -dy;
+                             // 将砖块状态设置为 0（已被打破）
+                            b.status = 0;
+                             // 得分加一
+                            score++;
+                            // 如果所有砖块都被打破，游戏胜利
+                            if(score == brickRowCount*brickColumnCount) {
+                                alert("YOU WIN, CONGRATS!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawBall() {
+             // 开始绘制路径
+            ctx.beginPath();
+             // 绘制一个圆形，圆心为 (x, y)，半径为 ballRadius
+            ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+            // 设置填充颜色为红色
+            ctx.fillStyle = "#FF5733"; // 修改为红色
+            // 填充圆形
+            ctx.fill();
+             // 关闭路径
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+             // 开始绘制路径
+            ctx.beginPath();
+             // 绘制一个矩形，左上角坐标为 (paddleX, canvas.height-paddleHeight)，宽度为 paddleWidth，高度为 paddleHeight
+            ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+             // 设置填充颜色为蓝色
+            ctx.fillStyle = "#0095DD";
+             // 填充矩形
+            ctx.fill();
+             // 关闭路径
+            ctx.closePath();
+        }
+
+        function draw() {
+             // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+             // 绘制砖块
+            drawBricks();
+             // 绘制挡板
+            drawPaddle();
+             // 绘制球
+            drawBall();
+            ctx.closePath();
+        }
+
+        function drawBricks() {
+             // 遍历所有砖块
+            for(var c=0; c<brickColumnCount; c++) {
+                for(var r=0; r<brickRowCount; r++) {
+                    // 如果砖块状态为 1（未被打破），则绘制该砖块
+                    if(bricks[c][r].status == 1) {
+                        // 计算砖块的位置
+                        var brickX = (r*(brickWidth+brickPadding))+brickOffsetLeft;
+                        var brickY = (c*(brickHeight+brickPadding))+brickOffsetTop;
+                        // 绘制砖块
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                         // 开始绘制路径
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "#33DD66"; // 修改为绿色
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+        function drawScore() {
+            // 绘制得分
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Score: "+score, 8, 20);
+        }
+
+        function drawLives() {
+            // 绘制生命
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Lives: "+lives, canvas.width-65, 20);
+        }
+
+        function drawTitle() {
+            // 绘制标题
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "#FF5733"; // 标题颜色
+           
+        }
+
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTitle(); // 绘制标题
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            drawScore();
+            drawLives();
+            collisionDetection();
+
+            if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
+                dx = -dx;
+            }
+            if(y + dy < ballRadius) {
+                dy = -dy;
+            }
+            else if(y + dy > canvas.height-ballRadius) {
+                if(x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                }
+                else {
+                    lives--;
+                    if(!lives) {
+                        alert("GAME OVER");
+                        document.location.reload();
+                    }
+                    else {
+                        x = canvas.width/2;
+                        y = canvas.height-30;
+                        dx = 2;
+                        dy = -2;
+                        paddleX = (canvas.width-paddleWidth)/2;
+                    }
+                }
+            }
+ // 根据按键状态移动挡板
+            if(rightPressed && paddleX < canvas.width-paddleWidth) {
+                paddleX += 7;
+            }
+            else if(leftPressed && paddleX > 0) {
+                paddleX -= 7;
+            }
+ // 更新球的位置
+            x += dx;
+            y += dy;
+             // 请求下一次重绘
+            requestAnimationFrame(draw);
+        }
+ // 开始游戏
+        draw();
+    </script>
+</body>
+</html>
